@@ -5,118 +5,114 @@
 <title>tic tac toe duel</title>
 <style>
 html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    font-family: 'Segoe UI', sans-serif;
-    background: #121212;
-    color: #fff;
-    overflow: hidden;
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    font-family:'Segoe UI',sans-serif;
+    background:#121212;
+    color:#fff;
+    overflow:hidden;
 }
-
 #background-img {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 855px;
-    height: 675px;
-    border-radius: 12px;
-    object-fit: cover;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:855px;
+    height:675px;
+    border-radius:12px;
+    object-fit:cover;
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
 }
-
 #ui {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    background: rgba(0,0,0,0.8);
-    padding: 15px;
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 180px;
-    font-size: 14px;
+    position:fixed;
+    top:20px;
+    left:20px;
+    background:rgba(0,0,0,0.8);
+    padding:15px;
+    border-radius:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-width:180px;
+    font-size:14px;
 }
-
 #ui input, #ui select, #ui button {
-    padding: 6px 8px;
-    border-radius: 6px;
-    border: none;
-    font-size: 14px;
-    outline: none;
-    background: #1f1f1f;
-    color: #fff;
+    padding:6px 8px;
+    border-radius:6px;
+    border:none;
+    font-size:14px;
+    outline:none;
+    background:#1f1f1f;
+    color:#fff;
 }
-
 #ui button {
-    cursor: pointer;
-    background: #4caf50;
-    color: #fff;
-    font-weight: bold;
-    transition: 0.2s;
+    cursor:pointer;
+    background:#4caf50;
+    color:#fff;
+    font-weight:bold;
+    transition:0.2s;
 }
-
-#ui button:hover {
-    background: #45a049;
-}
-
+#ui button:hover { background:#45a049; }
 #users {
-    background: #222;
-    padding: 8px;
-    border-radius: 8px;
-    margin-top: 8px;
-    max-height: 200px;
-    overflow-y: auto;
+    background:#222;
+    padding:8px;
+    border-radius:8px;
+    margin-top:8px;
+    max-height:200px;
+    overflow-y:auto;
 }
-
+#duel-request {
+    display:none;
+    background:#333;
+    border:1px solid #555;
+    padding:8px;
+    border-radius:6px;
+    margin-top:6px;
+}
 #board-container {
-    position: absolute;
-    top: 200px;
-    left: 200px;
-    background: rgba(30,30,30,0.65);
-    border-radius: 16px;
-    padding: 15px;
-    cursor: move;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    position:absolute;
+    top:200px;
+    left:200px;
+    background:rgba(30,30,30,0.65);
+    border-radius:16px;
+    padding:15px;
+    cursor:move;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    box-shadow:0 8px 25px rgba(0,0,0,0.4);
 }
-
 #board {
-    display: grid;
-    grid-template-columns: repeat(3, 50px);
-    grid-template-rows: repeat(3, 50px);
-    gap: 8px;
+    display:grid;
+    grid-template-columns:repeat(3,50px);
+    grid-template-rows:repeat(3,50px);
+    gap:8px;
 }
-
 .cell {
-    width: 50px;
-    height: 50px;
-    background: #2c2c2c;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    cursor: pointer;
-    user-select: none;
-    border-radius: 8px;
-    transition: 0.2s;
-    color: #fff;
+    width:50px;
+    height:50px;
+    background:#2c2c2c;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    cursor:pointer;
+    user-select:none;
+    border-radius:8px;
+    transition:0.2s;
+    color:#fff;
 }
-
-.cell:hover {
-    background: #3a3a3a;
-}
-
+.cell:hover { background:#3a3a3a; }
 #status {
-    margin-top: 12px;
-    font-weight: bold;
-    color: #ccc;
-    text-align: center;
+    margin-top:12px;
+    font-weight:bold;
+    color:#ccc;
+    text-align:center;
+}
+#duel-request button {
+    margin-left:4px;
 }
 </style>
 </head>
@@ -134,6 +130,7 @@ html, body {
     </select>
     <button onclick="startGame()">start duel</button>
     <div id="users"></div>
+    <div id="duel-request"></div>
 </div>
 
 <div id="board-container">
@@ -146,6 +143,7 @@ const boardEl = document.getElementById("board");
 const container = document.getElementById("board-container");
 const statusEl = document.getElementById("status");
 const usersDiv = document.getElementById("users");
+const duelRequestDiv = document.getElementById("duel-request");
 
 let board = Array(9).fill(null);
 let player = "X";
@@ -158,31 +156,31 @@ let ws, duelId, playerMark, userId;
 
 // draggable board
 let offsetX=0, offsetY=0, dragging=false;
-container.addEventListener("mousedown",e=>{dragging=true;offsetX=e.clientX-container.offsetLeft;offsetY=e.clientY-container.offsetTop;});
-document.addEventListener("mousemove",e=>{if(!dragging)return; container.style.left=(e.clientX-offsetX)+"px"; container.style.top=(e.clientY-offsetY)+"px";});
-document.addEventListener("mouseup",()=>dragging=false);
+container.addEventListener("mousedown", e=>{dragging=true; offsetX=e.clientX-container.offsetLeft; offsetY=e.clientY-container.offsetTop;});
+document.addEventListener("mousemove", e=>{if(!dragging) return; container.style.left=(e.clientX-offsetX)+"px"; container.style.top=(e.clientY-offsetY)+"px";});
+document.addEventListener("mouseup", ()=>dragging=false);
 
 function startGame(){
     const name = document.getElementById("username").value.trim();
-    if(!name){alert("enter a name");return;}
+    if(!name){ alert("enter a name"); return; }
     botLevel = document.getElementById("botSelect").value;
 
     if(botLevel==="none"){
         if(!ws) connectWS(name);
     } else {
         board = Array(9).fill(null);
-        gameActive=true;
+        gameActive = true;
         render();
-        statusEl.textContent=name+" vs "+botLevel;
+        statusEl.textContent = name + " vs " + botLevel;
     }
 }
 
 function render(){
-    boardEl.innerHTML="";
+    boardEl.innerHTML = "";
     board.forEach((cell,i)=>{
-        const div=document.createElement("div");
+        const div = document.createElement("div");
         div.className="cell";
-        div.textContent=cell||"";
+        div.textContent = cell||"";
         div.onclick=()=>{
             if(botLevel!=="none") playerMove(i);
             else onlineMove(i);
@@ -195,10 +193,8 @@ function playerMove(i){
     if(!gameActive || board[i]) return;
     board[i]=player;
     render();
-
-    if(checkWin(player)){statusEl.textContent="you win. bot got fucked."; gameActive=false; return;}
-    if(board.every(Boolean)){statusEl.textContent="draw. boring."; gameActive=false; return;}
-
+    if(checkWin(player)){ statusEl.textContent="you win. bot got fucked."; gameActive=false; return; }
+    if(board.every(Boolean)){ statusEl.textContent="draw. boring."; gameActive=false; return; }
     if(botLevel!=="none") setTimeout(botMove,400);
 }
 
@@ -212,7 +208,7 @@ function botMove(){
     else move=winningMove(bot)??winningMove(player)??empty[Math.floor(Math.random()*empty.length)];
     board[move]=bot;
     render();
-    if(checkWin(bot)){statusEl.textContent="bot wins. skill issue."; gameActive=false;}
+    if(checkWin(bot)){ statusEl.textContent="bot wins. skill issue."; gameActive=false; }
 }
 
 function winningMove(mark){
@@ -232,41 +228,43 @@ function checkWin(mark){
 
 /* multiplayer websocket */
 function connectWS(name){
-    ws=new WebSocket("ws://"+location.host);
-    ws.onopen=()=>ws.send(JSON.stringify({type:"setName",name}));
-    ws.onmessage=(evt)=>{
-        const msg=JSON.parse(evt.data);
-
-        if(msg.type==="assignId"){
-            userId = msg.userId; // now we know our own id
-        }
-
+    const protocol = location.protocol==="https:"?"wss:":"ws:";
+    ws = new WebSocket(protocol+"//"+location.host);
+    ws.onopen = ()=>ws.send(JSON.stringify({type:"setName",name}));
+    ws.onmessage = (evt)=>{
+        const msg = JSON.parse(evt.data);
+        if(msg.type==="assignId"){ userId = msg.userId; }
         if(msg.type==="userList"){
             usersDiv.innerHTML="online:<br>";
             msg.list.forEach(u=>{
-                if(u.name!==name) usersDiv.innerHTML+=`<div onclick="challenge(${u.id})">${u.name}</div>`;
+                if(u.id!==userId) usersDiv.innerHTML+=`<div onclick="challenge(${u.id})">${u.name}</div>`;
             });
         }
         if(msg.type==="challengeRequest"){
-            if(confirm(`${msg.name} wants to duel?`)){
+            duelRequestDiv.innerHTML=`${msg.name} wants to duel! <button id="acceptBtn">accept</button> <button id="declineBtn">decline</button>`;
+            duelRequestDiv.style.display="block";
+            document.getElementById("acceptBtn").onclick=()=>{
                 ws.send(JSON.stringify({type:"challengeResponse",from:msg.from,accept:true}));
-            } else {
+                duelRequestDiv.style.display="none";
+            };
+            document.getElementById("declineBtn").onclick=()=>{
                 ws.send(JSON.stringify({type:"challengeResponse",from:msg.from,accept:false}));
-            }
+                duelRequestDiv.style.display="none";
+            };
         }
         if(msg.type==="challengeDenied"){ alert(`${msg.from} denied your duel.`); }
         if(msg.type==="duelStart"){
-            duelId=msg.duelId;
-            playerMark=(msg.yourId==userId)?"X":"O";
-            board=Array(9).fill(null);
+            duelId = msg.duelId;
+            playerMark = (msg.yourId===userId)?"X":"O";
+            board = Array(9).fill(null);
             gameActive=true;
             render();
-            statusEl.textContent="duel started vs "+msg.opponent;
+            statusEl.textContent = "duel started vs "+msg.opponent;
         }
         if(msg.type==="updateBoard"){
-            board=msg.board;
+            board = msg.board;
             render();
-            statusEl.textContent="your turn: "+(msg.turn==userId);
+            statusEl.textContent = "your turn: "+(msg.turn===userId);
         }
     };
 }
