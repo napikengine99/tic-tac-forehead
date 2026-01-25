@@ -7,7 +7,13 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+// serve static files
 app.use(express.static(path.join(__dirname, "public")));
+
+// serve game.html for root URL
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "game.html"));
+});
 
 let users = [];       // {id, name, ws}
 let duels = [];       // {id, playerX, playerO, board, turn}
@@ -122,3 +128,4 @@ wss.on("connection", ws => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, ()=>console.log("Server running on port", PORT));
+
