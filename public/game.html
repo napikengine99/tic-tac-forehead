@@ -6,237 +6,289 @@
 
 <style>
 html, body {
-    margin:0;
-    padding:0;
-    width:100%;
-    height:100%;
-    background:#121212;
-    color:#fff;
-    font-family:Segoe UI, sans-serif;
-    overflow:hidden;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #121212;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  overflow: hidden;
 }
 
-#background-img {
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    width:855px;
-    height:675px;
-    border-radius:12px;
-    object-fit:cover;
-    box-shadow:0 12px 40px rgba(0,0,0,.5);
+#background {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 855px;
+  height: 675px;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: 0 15px 50px rgba(0,0,0,.6);
 }
 
 #ui {
-    position:fixed;
-    top:20px;
-    left:20px;
-    background:rgba(0,0,0,.8);
-    padding:15px;
-    border-radius:12px;
-    width:200px;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: rgba(0,0,0,.8);
+  padding: 14px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 190px;
 }
 
 #ui input, #ui select, #ui button {
-    width:100%;
-    margin-bottom:6px;
-    padding:6px;
-    border:none;
-    border-radius:6px;
-    background:#1f1f1f;
-    color:#fff;
+  background: #1f1f1f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px;
+  font-size: 14px;
 }
 
 #ui button {
-    background:#4caf50;
-    font-weight:bold;
-    cursor:pointer;
+  background: #4caf50;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 #users {
-    margin-top:8px;
-    background:#222;
-    padding:6px;
-    border-radius:6px;
-    max-height:180px;
-    overflow-y:auto;
+  margin-top: 6px;
+  background: #222;
+  padding: 6px;
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 #users div {
-    cursor:pointer;
-    padding:4px;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 6px;
 }
 
 #users div:hover {
-    background:#333;
+  background: #333;
 }
 
-#duel-request {
-    display:none;
-    background:#333;
-    padding:6px;
-    border-radius:6px;
-    margin-top:6px;
-}
-
-#board-container {
-    position:absolute;
-    top:200px;
-    left:200px;
-    background:rgba(30,30,30,.65);
-    padding:15px;
-    border-radius:16px;
-    cursor:move;
+#board-wrap {
+  position: absolute;
+  top: 260px;
+  left: 260px;
+  background: rgba(30,30,30,.65);
+  padding: 14px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.4);
 }
 
 #board {
-    display:grid;
-    grid-template-columns:repeat(3,50px);
-    gap:8px;
+  display: grid;
+  grid-template-columns: repeat(3, 45px);
+  gap: 8px;
 }
 
 .cell {
-    width:50px;
-    height:50px;
-    background:#2c2c2c;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:24px;
-    border-radius:8px;
-    cursor:pointer;
+  width: 45px;
+  height: 45px;
+  background: #2c2c2c;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  cursor: pointer;
 }
 
-.cell:hover { background:#3a3a3a; }
+.cell:hover {
+  background: #3a3a3a;
+}
 
 #status {
-    margin-top:10px;
-    text-align:center;
-    color:#ccc;
+  margin-top: 10px;
+  font-size: 14px;
+  text-align: center;
+  color: #ccc;
 }
 </style>
 </head>
 
 <body>
 
-<img id="background-img" src="forehead.png">
+<img id="background" src="forehead.png">
 
 <div id="ui">
-    <input id="username" placeholder="your name">
-    <select id="mode">
-        <option value="online">play online</option>
-        <option value="easy">bot_easy</option>
-        <option value="medium">bot_medium</option>
-        <option value="hard">bot_hard</option>
-    </select>
-    <button onclick="startGame()">start duel</button>
-    <div id="users"></div>
-    <div id="duel-request"></div>
+  <input id="name" placeholder="your name">
+  <select id="mode">
+    <option value="online">play online</option>
+    <option value="easy">bot_easy</option>
+    <option value="medium">bot_medium</option>
+    <option value="hard">bot_hard</option>
+  </select>
+  <button id="start">start duel</button>
+  <div id="users"></div>
 </div>
 
-<div id="board-container">
-    <div id="board"></div>
-    <div id="status">waiting…</div>
+<div id="board-wrap">
+  <div id="board"></div>
+  <div id="status">idle</div>
 </div>
 
 <script>
 const boardEl = document.getElementById("board");
-const usersEl = document.getElementById("users");
 const statusEl = document.getElementById("status");
-const duelReq = document.getElementById("duel-request");
+const usersEl = document.getElementById("users");
+const startBtn = document.getElementById("start");
 
 let board = Array(9).fill(null);
-let gameActive = false;
-let myMark = null;
-let myTurn = false;
-let duelId = null;
-let userId = null;
-let name = "";
+let gameOn = false;
+let botLevel = "online";
 
-const protocol = location.protocol === "https:" ? "wss://" : "ws://";
-const ws = new WebSocket(protocol + location.host);
+let ws;
+let myId;
+let myMark;
+let duelId;
+let joinedOnline = false;
 
-/* websocket always connects */
-ws.onopen = () => console.log("ws connected");
+const wins = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
 
-ws.onmessage = e => {
+function draw() {
+  boardEl.innerHTML = "";
+  board.forEach((v,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell";
+    c.textContent = v || "";
+    c.onclick = ()=> clickCell(i);
+    boardEl.appendChild(c);
+  });
+}
+
+function check(m) {
+  return wins.some(l=>l.every(i=>board[i]===m));
+}
+
+function startGame() {
+  const name = document.getElementById("name").value.trim();
+  if (!name) return alert("enter a name");
+
+  botLevel = document.getElementById("mode").value;
+
+  if (botLevel === "online") {
+    if (joinedOnline) return;
+    connect(name);
+    joinedOnline = true;
+    startBtn.disabled = true;
+  } else {
+    board.fill(null);
+    gameOn = true;
+    draw();
+    statusEl.textContent = "vs bot";
+  }
+}
+
+function clickCell(i) {
+  if (!gameOn || board[i]) return;
+
+  if (botLevel === "online") {
+    ws.send(JSON.stringify({
+      type:"move",
+      duelId,
+      index:i
+    }));
+  } else {
+    board[i] = "X";
+    draw();
+    if (check("X")) return end("you win");
+    botMove();
+  }
+}
+
+function botMove() {
+  const empty = board.map((v,i)=>v?null:i).filter(v=>v!==null);
+  if (!empty.length) return end("draw");
+  const m = empty[Math.floor(Math.random()*empty.length)];
+  board[m] = "O";
+  draw();
+  if (check("O")) end("bot wins");
+}
+
+function end(t) {
+  statusEl.textContent = t;
+  gameOn = false;
+}
+
+function connect(name) {
+  ws = new WebSocket(`ws://${location.host}`);
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type:"setName", name }));
+  };
+
+  ws.onmessage = e => {
     const msg = JSON.parse(e.data);
 
-    if (msg.type === "assignId") userId = msg.userId;
+    if (msg.type === "nameTaken") {
+      alert("name already taken");
+      location.reload();
+    }
+
+    if (msg.type === "assignId") myId = msg.userId;
 
     if (msg.type === "userList") {
-        usersEl.innerHTML = "online:<br>";
-        msg.list.forEach(u => {
-            if (u.id !== userId)
-                usersEl.innerHTML += `<div onclick="challenge(${u.id})">${u.name}</div>`;
-        });
+      usersEl.innerHTML = "";
+      msg.list.forEach(u=>{
+        if (u.id !== myId) {
+          const d = document.createElement("div");
+          d.textContent = u.name;
+          d.onclick = ()=> ws.send(JSON.stringify({
+            type:"challenge",
+            target:u.id
+          }));
+          usersEl.appendChild(d);
+        }
+      });
     }
 
     if (msg.type === "challengeRequest") {
-        duelReq.style.display = "block";
-        duelReq.innerHTML = `${msg.name} wants to duel
-        <button onclick="respond(true,${msg.from})">yes</button>
-        <button onclick="respond(false,${msg.from})">no</button>`;
+      if (confirm(`${msg.name} wants to duel`)) {
+        ws.send(JSON.stringify({
+          type:"challengeResponse",
+          from:msg.from,
+          accept:true
+        }));
+      }
     }
 
     if (msg.type === "duelStart") {
-        duelId = msg.duelId;
-        myMark = msg.mark;
-        myTurn = msg.turn === userId;
-        board = Array(9).fill(null);
-        gameActive = true;
-        render();
-        statusEl.textContent = `you are ${myMark}`;
+      duelId = msg.duelId;
+      myMark = msg.mark;
+      board.fill(null);
+      gameOn = true;
+      draw();
+      statusEl.textContent = `you are ${myMark}`;
     }
 
     if (msg.type === "updateBoard") {
-        board = msg.board;
-        myTurn = msg.turn === userId;
-        render();
+      board = msg.board;
+      draw();
+      statusEl.textContent = msg.turn === myId ? "your turn" : "enemy turn";
     }
 
     if (msg.type === "gameOver") {
-        statusEl.textContent = msg.result;
-        gameActive = false;
+      end(msg.result);
     }
-};
-
-function startGame() {
-    name = document.getElementById("username").value.trim();
-    if (!name) return alert("name first asshole");
-    ws.send(JSON.stringify({ type:"setName", name }));
+  };
 }
 
-function challenge(id) {
-    ws.send(JSON.stringify({ type:"challenge", target:id }));
-}
-
-function respond(yes, from) {
-    duelReq.style.display = "none";
-    ws.send(JSON.stringify({ type:"challengeResponse", from, accept:yes }));
-}
-
-function render() {
-    boardEl.innerHTML = "";
-    board.forEach((v,i)=>{
-        const d = document.createElement("div");
-        d.className="cell";
-        d.textContent = v || "";
-        d.onclick = ()=>move(i);
-        boardEl.appendChild(d);
-    });
-    statusEl.textContent = myTurn ? "your turn" : "enemy turn";
-}
-
-function move(i) {
-    if (!gameActive || !myTurn || board[i]) return;
-    ws.send(JSON.stringify({
-        type:"move",
-        duelId,
-        index:i
-    }));
-}
+startBtn.onclick = startGame;
+draw();
 </script>
 
 </body>
