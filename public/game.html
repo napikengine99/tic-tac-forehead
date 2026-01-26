@@ -3,17 +3,19 @@
 <head>
 <meta charset="utf-8">
 <title>tic tac toe duel</title>
+
 <style>
 html, body {
     margin:0;
     padding:0;
     width:100%;
     height:100%;
-    font-family:'Segoe UI',sans-serif;
     background:#121212;
     color:#fff;
+    font-family:Segoe UI, sans-serif;
     overflow:hidden;
 }
+
 #background-img {
     position:absolute;
     top:50%;
@@ -23,73 +25,77 @@ html, body {
     height:675px;
     border-radius:12px;
     object-fit:cover;
-    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+    box-shadow:0 12px 40px rgba(0,0,0,.5);
 }
+
 #ui {
     position:fixed;
     top:20px;
     left:20px;
-    background:rgba(0,0,0,0.8);
+    background:rgba(0,0,0,.8);
     padding:15px;
     border-radius:12px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    min-width:180px;
-    font-size:14px;
+    width:200px;
 }
+
 #ui input, #ui select, #ui button {
-    padding:6px 8px;
-    border-radius:6px;
+    width:100%;
+    margin-bottom:6px;
+    padding:6px;
     border:none;
-    font-size:14px;
-    outline:none;
+    border-radius:6px;
     background:#1f1f1f;
     color:#fff;
 }
+
 #ui button {
-    cursor:pointer;
     background:#4caf50;
-    color:#fff;
     font-weight:bold;
-    transition:0.2s;
+    cursor:pointer;
 }
-#ui button:hover { background:#45a049; }
+
 #users {
-    background:#222;
-    padding:8px;
-    border-radius:8px;
     margin-top:8px;
-    max-height:200px;
+    background:#222;
+    padding:6px;
+    border-radius:6px;
+    max-height:180px;
     overflow-y:auto;
 }
+
+#users div {
+    cursor:pointer;
+    padding:4px;
+}
+
+#users div:hover {
+    background:#333;
+}
+
 #duel-request {
     display:none;
     background:#333;
-    border:1px solid #555;
-    padding:8px;
+    padding:6px;
     border-radius:6px;
     margin-top:6px;
 }
+
 #board-container {
     position:absolute;
     top:200px;
     left:200px;
-    background:rgba(30,30,30,0.65);
-    border-radius:16px;
+    background:rgba(30,30,30,.65);
     padding:15px;
+    border-radius:16px;
     cursor:move;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    box-shadow:0 8px 25px rgba(0,0,0,0.4);
 }
+
 #board {
     display:grid;
     grid-template-columns:repeat(3,50px);
-    grid-template-rows:repeat(3,50px);
     gap:8px;
 }
+
 .cell {
     width:50px;
     height:50px;
@@ -98,32 +104,28 @@ html, body {
     align-items:center;
     justify-content:center;
     font-size:24px;
-    cursor:pointer;
-    user-select:none;
     border-radius:8px;
-    transition:0.2s;
-    color:#fff;
+    cursor:pointer;
 }
+
 .cell:hover { background:#3a3a3a; }
+
 #status {
-    margin-top:12px;
-    font-weight:bold;
-    color:#ccc;
+    margin-top:10px;
     text-align:center;
-}
-#duel-request button {
-    margin-left:4px;
+    color:#ccc;
 }
 </style>
 </head>
+
 <body>
 
-<img id="background-img" src="forehead.png" alt="background">
+<img id="background-img" src="forehead.png">
 
 <div id="ui">
-    <input id="username" placeholder="your name"/>
-    <select id="botSelect">
-        <option value="none">play online</option>
+    <input id="username" placeholder="your name">
+    <select id="mode">
+        <option value="online">play online</option>
         <option value="easy">bot_easy</option>
         <option value="medium">bot_medium</option>
         <option value="hard">bot_hard</option>
@@ -135,144 +137,105 @@ html, body {
 
 <div id="board-container">
     <div id="board"></div>
-    <div id="status">waiting...</div>
+    <div id="status">waiting…</div>
 </div>
 
 <script>
 const boardEl = document.getElementById("board");
-const container = document.getElementById("board-container");
+const usersEl = document.getElementById("users");
 const statusEl = document.getElementById("status");
-const usersDiv = document.getElementById("users");
-const duelRequestDiv = document.getElementById("duel-request");
+const duelReq = document.getElementById("duel-request");
 
 let board = Array(9).fill(null);
-let player = "X";
-let bot = "O";
 let gameActive = false;
-let botLevel = "none";
+let myMark = null;
+let myTurn = false;
+let duelId = null;
+let userId = null;
+let name = "";
 
-// multiplayer vars
-let ws, duelId, playerMark, userId;
+const protocol = location.protocol === "https:" ? "wss://" : "ws://";
+const ws = new WebSocket(protocol + location.host);
 
-// draggable board
-let offsetX=0, offsetY=0, dragging=false;
-container.addEventListener("mousedown", e=>{dragging=true; offsetX=e.clientX-container.offsetLeft; offsetY=e.clientY-container.offsetTop;});
-document.addEventListener("mousemove", e=>{if(!dragging) return; container.style.left=(e.clientX-offsetX)+"px"; container.style.top=(e.clientY-offsetY)+"px";});
-document.addEventListener("mouseup", ()=>dragging=false);
+/* websocket always connects */
+ws.onopen = () => console.log("ws connected");
 
-function startGame(){
-    const name = document.getElementById("username").value.trim();
-    if(!name){ alert("enter a name"); return; }
-    botLevel = document.getElementById("botSelect").value;
+ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
 
-    if(botLevel==="none"){
-        if(!ws) connectWS(name);
-    } else {
+    if (msg.type === "assignId") userId = msg.userId;
+
+    if (msg.type === "userList") {
+        usersEl.innerHTML = "online:<br>";
+        msg.list.forEach(u => {
+            if (u.id !== userId)
+                usersEl.innerHTML += `<div onclick="challenge(${u.id})">${u.name}</div>`;
+        });
+    }
+
+    if (msg.type === "challengeRequest") {
+        duelReq.style.display = "block";
+        duelReq.innerHTML = `${msg.name} wants to duel
+        <button onclick="respond(true,${msg.from})">yes</button>
+        <button onclick="respond(false,${msg.from})">no</button>`;
+    }
+
+    if (msg.type === "duelStart") {
+        duelId = msg.duelId;
+        myMark = msg.mark;
+        myTurn = msg.turn === userId;
         board = Array(9).fill(null);
         gameActive = true;
         render();
-        statusEl.textContent = name + " vs " + botLevel;
+        statusEl.textContent = `you are ${myMark}`;
     }
+
+    if (msg.type === "updateBoard") {
+        board = msg.board;
+        myTurn = msg.turn === userId;
+        render();
+    }
+
+    if (msg.type === "gameOver") {
+        statusEl.textContent = msg.result;
+        gameActive = false;
+    }
+};
+
+function startGame() {
+    name = document.getElementById("username").value.trim();
+    if (!name) return alert("name first asshole");
+    ws.send(JSON.stringify({ type:"setName", name }));
 }
 
-function render(){
+function challenge(id) {
+    ws.send(JSON.stringify({ type:"challenge", target:id }));
+}
+
+function respond(yes, from) {
+    duelReq.style.display = "none";
+    ws.send(JSON.stringify({ type:"challengeResponse", from, accept:yes }));
+}
+
+function render() {
     boardEl.innerHTML = "";
-    board.forEach((cell,i)=>{
-        const div = document.createElement("div");
-        div.className="cell";
-        div.textContent = cell||"";
-        div.onclick=()=>{
-            if(botLevel!=="none") playerMove(i);
-            else onlineMove(i);
-        };
-        boardEl.appendChild(div);
+    board.forEach((v,i)=>{
+        const d = document.createElement("div");
+        d.className="cell";
+        d.textContent = v || "";
+        d.onclick = ()=>move(i);
+        boardEl.appendChild(d);
     });
+    statusEl.textContent = myTurn ? "your turn" : "enemy turn";
 }
 
-function playerMove(i){
-    if(!gameActive || board[i]) return;
-    board[i]=player;
-    render();
-    if(checkWin(player)){ statusEl.textContent="you win. bot got fucked."; gameActive=false; return; }
-    if(board.every(Boolean)){ statusEl.textContent="draw. boring."; gameActive=false; return; }
-    if(botLevel!=="none") setTimeout(botMove,400);
-}
-
-function botMove(){
-    if(!gameActive) return;
-    let empty=board.map((v,i)=>v===null?i:null).filter(v=>v!==null);
-    if(empty.length===0) return;
-    let move;
-    if(botLevel==="easy") move=empty[Math.floor(Math.random()*empty.length)];
-    else if(botLevel==="medium") move=winningMove(bot)??empty[Math.floor(Math.random()*empty.length)];
-    else move=winningMove(bot)??winningMove(player)??empty[Math.floor(Math.random()*empty.length)];
-    board[move]=bot;
-    render();
-    if(checkWin(bot)){ statusEl.textContent="bot wins. skill issue."; gameActive=false; }
-}
-
-function winningMove(mark){
-    const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    for(const line of wins){
-        const cells=line.map(i=>board[i]);
-        if(cells.filter(c=>c===mark).length===2 && cells.includes(null))
-            return line[cells.indexOf(null)];
-    }
-    return null;
-}
-
-function checkWin(mark){
-    const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    return wins.some(line=>line.every(i=>board[i]===mark));
-}
-
-/* multiplayer websocket */
-function connectWS(name){
-    const protocol = location.protocol==="https:"?"wss:":"ws:";
-    ws = new WebSocket(protocol+"//"+location.host);
-    ws.onopen = ()=>ws.send(JSON.stringify({type:"setName",name}));
-    ws.onmessage = (evt)=>{
-        const msg = JSON.parse(evt.data);
-        if(msg.type==="assignId"){ userId = msg.userId; }
-        if(msg.type==="userList"){
-            usersDiv.innerHTML="online:<br>";
-            msg.list.forEach(u=>{
-                if(u.id!==userId) usersDiv.innerHTML+=`<div onclick="challenge(${u.id})">${u.name}</div>`;
-            });
-        }
-        if(msg.type==="challengeRequest"){
-            duelRequestDiv.innerHTML=`${msg.name} wants to duel! <button id="acceptBtn">accept</button> <button id="declineBtn">decline</button>`;
-            duelRequestDiv.style.display="block";
-            document.getElementById("acceptBtn").onclick=()=>{
-                ws.send(JSON.stringify({type:"challengeResponse",from:msg.from,accept:true}));
-                duelRequestDiv.style.display="none";
-            };
-            document.getElementById("declineBtn").onclick=()=>{
-                ws.send(JSON.stringify({type:"challengeResponse",from:msg.from,accept:false}));
-                duelRequestDiv.style.display="none";
-            };
-        }
-        if(msg.type==="challengeDenied"){ alert(`${msg.from} denied your duel.`); }
-        if(msg.type==="duelStart"){
-            duelId = msg.duelId;
-            playerMark = (msg.yourId===userId)?"X":"O";
-            board = Array(9).fill(null);
-            gameActive=true;
-            render();
-            statusEl.textContent = "duel started vs "+msg.opponent;
-        }
-        if(msg.type==="updateBoard"){
-            board = msg.board;
-            render();
-            statusEl.textContent = "your turn: "+(msg.turn===userId);
-        }
-    };
-}
-
-function challenge(id){ ws.send(JSON.stringify({type:"challenge",target:id})); }
-function onlineMove(i){
-    if(!gameActive || board[i] || !duelId) return;
-    ws.send(JSON.stringify({type:"move",duelId,index:i,mark:playerMark}));
+function move(i) {
+    if (!gameActive || !myTurn || board[i]) return;
+    ws.send(JSON.stringify({
+        type:"move",
+        duelId,
+        index:i
+    }));
 }
 </script>
 
