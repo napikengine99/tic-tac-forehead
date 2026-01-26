@@ -7,124 +7,139 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// serve static files (game.html, forehead.png, etc)
 app.use(express.static(path.join(__dirname, "public")));
+app.get("/", (_, res) =>
+  res.sendFile(path.join(__dirname, "public", "game.html"))
+);
 
-// serve game.html at root URL
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "game.html"));
-});
+let users = [];   // { id, name, ws }
+let duels = [];   // { id, x, o, board, turn }
 
-// multiplayer state
-let users = [];       // {id, name, ws}
-let duels = [];       // {id, playerX, playerO, board, turn}
+const genId = () => Math.random().toString(36).slice(2);
 
-// unique id generator
-const genId = () => Math.floor(Math.random() * 1000000);
-
-// broadcast online users
-function broadcastUserList() {
+function sendUserList() {
   const list = users.map(u => ({ id: u.id, name: u.name }));
-  users.forEach(u => u.ws.send(JSON.stringify({ type: "userList", list })));
+  users.forEach(u => u.ws.send(JSON.stringify({ type:"userList", list })));
 }
 
-// check win
-function checkWin(board, mark) {
-  const wins = [
-    [0,1,2],[3,4,5],[6,7,8],
-    [0,3,6],[1,4,7],[2,5,8],
-    [0,4,8],[2,4,6]
-  ];
-  return wins.some(line => line.every(i => board[i] === mark));
+function checkWin(board, m) {
+  const w=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  return w.some(l=>l.every(i=>board[i]===m));
 }
 
-// websocket handling
 wss.on("connection", ws => {
-  let currentUser = null;
+  let me = null;
 
-  ws.on("message", msg => {
-    let data;
-    try { data = JSON.parse(msg); } catch(e){ return; }
+  ws.on("message", raw => {
+    let msg;
+    try { msg = JSON.parse(raw); } catch { return; }
 
-    if(data.type === "setName") {
-      const id = genId();
-      currentUser = { id, name: data.name, ws };
-      users.push(currentUser);
-      ws.send(JSON.stringify({ type: "assignId", userId: id }));
-      broadcastUserList();
+    /* SET NAME */
+    if (msg.type === "setName") {
+      if (me) return;
+
+      if (users.some(u => u.name === msg.name)) {
+        ws.send(JSON.stringify({ type:"nameTaken" }));
+        return;
+      }
+
+      me = { id: genId(), name: msg.name, ws };
+      users.push(me);
+      ws.send(JSON.stringify({ type:"assignId", userId: me.id }));
+      sendUserList();
     }
 
-    if(data.type === "challenge") {
-      const target = users.find(u => u.id === data.target);
-      if(target) target.ws.send(JSON.stringify({
-        type: "challengeRequest",
-        from: currentUser.id,
-        name: currentUser.name
+    /* CHALLENGE */
+    if (msg.type === "challenge") {
+      if (!me) return;
+      if (msg.target === me.id) return;
+
+      const target = users.find(u => u.id === msg.target);
+      if (!target) return;
+
+      target.ws.send(JSON.stringify({
+        type:"challengeRequest",
+        from: me.id,
+        name: me.name
       }));
     }
 
-    if(data.type === "challengeResponse") {
-      const fromUser = users.find(u => u.id === data.from);
-      if(fromUser){
-        if(data.accept){
-          const duelId = genId();
-          const duel = {
-            id: duelId,
-            playerX: fromUser.id,
-            playerO: currentUser.id,
-            board: Array(9).fill(null),
-            turn: fromUser.id
-          };
-          duels.push(duel);
+    /* RESPONSE */
+    if (msg.type === "challengeResponse") {
+      const other = users.find(u => u.id === msg.from);
+      if (!other || !me) return;
 
-          // notify both players
-          fromUser.ws.send(JSON.stringify({
-            type: "duelStart",
-            duelId,
-            yourId: fromUser.id,
-            opponent: currentUser.name
-          }));
-          currentUser.ws.send(JSON.stringify({
-            type: "duelStart",
-            duelId,
-            yourId: currentUser.id,
-            opponent: fromUser.name
-          }));
-        } else {
-          fromUser.ws.send(JSON.stringify({ type: "challengeDenied", from: currentUser.name }));
-        }
+      if (!msg.accept) {
+        other.ws.send(JSON.stringify({ type:"challengeDenied" }));
+        return;
       }
+
+      const duel = {
+        id: genId(),
+        x: other.id,
+        o: me.id,
+        board: Array(9).fill(null),
+        turn: other.id
+      };
+
+      duels.push(duel);
+
+      other.ws.send(JSON.stringify({
+        type:"duelStart",
+        duelId: duel.id,
+        mark:"X",
+        turn: duel.turn,
+        opponent: me.name
+      }));
+
+      me.ws.send(JSON.stringify({
+        type:"duelStart",
+        duelId: duel.id,
+        mark:"O",
+        turn: duel.turn,
+        opponent: other.name
+      }));
     }
 
-    if(data.type === "move") {
-      const duel = duels.find(d => d.id === data.duelId);
-      if(!duel) return;
-      if(duel.board[data.index]) return;
-      if(duel.turn !== currentUser.id) return;
+    /* MOVE */
+    if (msg.type === "move") {
+      const d = duels.find(d => d.id === msg.duelId);
+      if (!d || d.turn !== me.id) return;
+      if (d.board[msg.index]) return;
 
-      duel.board[data.index] = data.mark;
-      duel.turn = (duel.turn === duel.playerX) ? duel.playerO : duel.playerX;
+      const mark = d.x === me.id ? "X" : "O";
+      d.board[msg.index] = mark;
+      d.turn = d.turn === d.x ? d.o : d.x;
 
-      [duel.playerX, duel.playerO].forEach(pid => {
-        const u = users.find(u => u.id === pid);
-        if(u){
+      for (const u of users) {
+        if (u.id === d.x || u.id === d.o) {
           u.ws.send(JSON.stringify({
-            type: "updateBoard",
-            board: duel.board,
-            turn: duel.turn
+            type:"updateBoard",
+            board:d.board,
+            turn:d.turn
           }));
         }
-      });
+      }
+
+      if (checkWin(d.board, mark)) {
+        for (const u of users) {
+          if (u.id === d.x || u.id === d.o) {
+            u.ws.send(JSON.stringify({
+              type:"gameOver",
+              result: u.id === me.id ? "you win" : "you lose"
+            }));
+          }
+        }
+        duels = duels.filter(x => x.id !== d.id);
+      }
     }
   });
 
   ws.on("close", () => {
-    if(currentUser){
-      users = users.filter(u => u.id !== currentUser.id);
-      broadcastUserList();
-    }
+    if (!me) return;
+    users = users.filter(u => u !== me);
+    sendUserList();
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log("Server running on port", PORT));
+server.listen(process.env.PORT || 3000);
