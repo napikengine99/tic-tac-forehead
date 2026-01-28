@@ -5,48 +5,30 @@
 body {
   margin: 0;
   height: 100vh;
-  background: radial-gradient(circle at top, #222, #000);
-  color: white;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #000;
+  color: #eaeaea;
+  font-family: system-ui, sans-serif;
   overflow: hidden;
 }
 
-/* top bar (name setter) */
+/* top bar */
 #topbar {
   position: fixed;
-  top: 12px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
-  z-index: 20;
+  z-index: 10;
 }
 
-#topbar input {
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: none;
-  outline: none;
-  background: rgba(255,255,255,0.1);
-  color: white;
-}
-
-#topbar input::placeholder {
-  color: rgba(255,255,255,0.6);
-}
-
+#topbar input,
 #topbar button {
-  padding: 8px 16px;
+  background: #111;
+  border: 1px solid #222;
+  color: #eaeaea;
+  padding: 8px 14px;
   border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  background: rgba(255,255,255,0.2);
-  color: white;
-  transition: background 0.2s;
-}
-
-#topbar button:hover {
-  background: rgba(255,255,255,0.35);
 }
 
 /* layout */
@@ -60,126 +42,72 @@ body {
 #sidebar {
   width: 260px;
   padding: 20px;
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(14px);
-  border-right: 1px solid rgba(255,255,255,0.08);
-}
-
-#sidebar h2 {
-  margin: 0 0 12px 0;
-  font-weight: 500;
-  opacity: 0.85;
-}
-
-#users {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  border-right: 1px solid #111;
 }
 
 .user {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.08);
+  padding: 10px;
+  border-radius: 10px;
+  background: #0a0a0a;
+  margin-bottom: 6px;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
 }
 
 .user:hover {
-  background: rgba(255,255,255,0.2);
-  transform: translateX(2px);
+  background: #151515;
 }
 
-/* game area */
+/* game */
 #game {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
 }
 
-/* forehead image */
+#turnText {
+  margin-bottom: 12px;
+  opacity: 0.8;
+}
+
 #forehead {
   width: 420px;
-  max-width: 80vw;
-  filter: drop-shadow(0 0 40px rgba(255,255,255,0.18));
-  user-select: none;
   pointer-events: none;
+  user-select: none;
 }
 
-/* tic tac toe board */
 #board {
   position: absolute;
   width: 240px;
   height: 240px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0;
 }
 
 .cell {
-  border: 2px solid rgba(255,255,255,0.55);
+  border: 2px solid #222;
   font-size: 3rem;
-  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
 }
 
 .cell:hover {
-  background: rgba(255,255,255,0.12);
+  background: #111;
 }
 
-.cell:active {
-  transform: scale(0.95);
-}
-
-/* duel popup overlay */
+/* popup */
 #popup {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.8);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 50;
 }
 
-#popup p {
-  margin-bottom: 20px;
-  font-size: 1.2rem;
-}
-
-.popupButtons {
-  display: flex;
-  gap: 16px;
-}
-
-#popup button {
-  padding: 10px 24px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  color: white;
-  background: rgba(255,255,255,0.2);
-  transition: background 0.2s, transform 0.1s;
-}
-
-#popup button:hover {
-  background: rgba(255,255,255,0.35);
-}
-
-#popup button:active {
-  transform: scale(0.95);
-}
-
-/* utility */
 .hidden {
-  display: none !important;
+  display: none;
 }
