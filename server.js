@@ -5,35 +5,38 @@ const io = require("socket.io")(http)
 
 app.use(express.static("public"))
 
-let rooms = {}
+let users = {}
 
 io.on("connection", socket => {
-  socket.on("join", room => {
+  users[socket.id] = { id: socket.id }
+  io.emit("users", Object.keys(users))
+
+  socket.on("duel-request", target => {
+    io.to(target).emit("duel-request", socket.id)
+  })
+
+  socket.on("duel-accept", target => {
+    const room = socket.id + "#" + target
     socket.join(room)
+    io.to(target).emit("duel-start", { room })
+    socket.emit("duel-start", { room })
+  })
 
-    if (!rooms[room]) {
-      rooms[room] = []
-    }
-
-    rooms[room].push(socket.id)
-
-    const symbol = rooms[room].length === 1 ? "X" : "O"
+  socket.on("join-room", room => {
+    socket.join(room)
+    const symbol = io.sockets.adapter.rooms.get(room).size === 1 ? "X" : "O"
     socket.emit("symbol", symbol)
+  })
 
-    if (rooms[room].length === 2) {
-      io.to(room).emit("start")
-    }
+  socket.on("move", data => {
+    socket.to(data.room).emit("move", data)
+  })
 
-    socket.on("move", data => {
-      socket.to(room).emit("move", data)
-    })
-
-    socket.on("disconnect", () => {
-      rooms[room] = rooms[room].filter(id => id !== socket.id)
-      if (rooms[room].length === 0) delete rooms[room]
-    })
+  socket.on("disconnect", () => {
+    delete users[socket.id]
+    io.emit("users", Object.keys(users))
   })
 })
 
 const port = process.env.PORT || 3000
-http.listen(port, () => console.log("server running on " + port))
+http.listen(port, () => console.log("server running"))
