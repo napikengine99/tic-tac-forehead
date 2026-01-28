@@ -1,31 +1,185 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  background: radial-gradient(circle at top, #222, #000);
+  color: white;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+}
+
+/* top bar (name setter) */
 #topbar {
   position: fixed;
-  top: 10px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
-  z-index: 10;
+  z-index: 20;
 }
 
 #topbar input {
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
   border: none;
+  outline: none;
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+#topbar input::placeholder {
+  color: rgba(255,255,255,0.6);
 }
 
 #topbar button {
-  padding: 6px 14px;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  transition: background 0.2s;
 }
 
-#popup.hidden {
-  display: none;
+#topbar button:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+/* layout */
+#layout {
+  display: flex;
+  height: 100%;
+  padding-top: 60px;
+}
+
+/* sidebar */
+#sidebar {
+  width: 260px;
+  padding: 20px;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(14px);
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+
+#sidebar h2 {
+  margin: 0 0 12px 0;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+#users {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.user:hover {
+  background: rgba(255,255,255,0.2);
+  transform: translateX(2px);
+}
+
+/* game area */
+#game {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* forehead image */
+#forehead {
+  width: 420px;
+  max-width: 80vw;
+  filter: drop-shadow(0 0 40px rgba(255,255,255,0.18));
+  user-select: none;
+  pointer-events: none;
+}
+
+/* tic tac toe board */
+#board {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+
+.cell {
+  border: 2px solid rgba(255,255,255,0.55);
+  font-size: 3rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.cell:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+.cell:active {
+  transform: scale(0.95);
+}
+
+/* duel popup overlay */
+#popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+#popup p {
+  margin-bottom: 20px;
+  font-size: 1.2rem;
 }
 
 .popupButtons {
   display: flex;
-  gap: 12px;
+  gap: 16px;
+}
+
+#popup button {
+  padding: 10px 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: white;
+  background: rgba(255,255,255,0.2);
+  transition: background 0.2s, transform 0.1s;
+}
+
+#popup button:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+#popup button:active {
+  transform: scale(0.95);
+}
+
+/* utility */
+.hidden {
+  display: none !important;
 }
