@@ -7,7 +7,12 @@
 </head>
 <body>
 
-<div id="layout">
+<div id="namePrompt">
+  <input id="nameInput" placeholder="enter your name">
+  <button onclick="setName()">join</button>
+</div>
+
+<div id="layout" class="hidden">
 
   <div id="sidebar">
     <h2>online</h2>
@@ -22,7 +27,7 @@
 </div>
 
 <div id="popup" class="hidden">
-  <p>duel request</p>
+  <p id="popupText"></p>
   <button onclick="acceptDuel()">accept</button>
   <button onclick="declineDuel()">decline</button>
 </div>
