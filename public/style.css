@@ -94,6 +94,26 @@ body {
   cursor: pointer;
 }
 
+#namePrompt {
+  position: fixed;
+  inset: 0;
+  background: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+#namePrompt input {
+  padding: 12px;
+  font-size: 1rem;
+}
+
+#namePrompt button {
+  padding: 12px 20px;
+  cursor: pointer;
+}
+
 .hidden {
   display: none;
 }
