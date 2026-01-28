@@ -1,142 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>tic tac toe duel</title>
-
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  background: #121212;
-  color: #fff;
-  font-family: system-ui, sans-serif;
-  overflow: hidden;
-}
-
-#background {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 855px;
-  height: 675px;
-  border-radius: 14px;
-  object-fit: cover;
-  box-shadow: 0 15px 50px rgba(0,0,0,.6);
-}
-
-#ui {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  background: rgba(0,0,0,.8);
-  padding: 14px;
-  border-radius: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 190px;
-}
-
-#ui input, #ui select, #ui button {
-  background: #1f1f1f;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 7px;
-  font-size: 14px;
-}
-
-#ui button {
-  background: #4caf50;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-#users {
-  margin-top: 6px;
-  background: #222;
-  padding: 6px;
-  border-radius: 8px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-#users div {
-  padding: 4px;
-  cursor: pointer;
-  border-radius: 6px;
-}
-
-#users div:hover {
-  background: #333;
-}
-
-#board-wrap {
-  position: absolute;
-  top: 260px;
-  left: 260px;
-  background: rgba(30,30,30,.65);
-  padding: 14px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.4);
-}
-
-#board {
-  display: grid;
-  grid-template-columns: repeat(3, 45px);
-  gap: 8px;
-}
-
-.cell {
-  width: 45px;
-  height: 45px;
-  background: #2c2c2c;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  cursor: pointer;
-}
-
-.cell:hover {
-  background: #3a3a3a;
-}
-
-#status {
-  margin-top: 10px;
-  font-size: 14px;
-  text-align: center;
-  color: #ccc;
-}
-</style>
-</head>
-
-<body>
-
-<img id="background" src="forehead.png">
-
-<div id="ui">
-  <input id="name" placeholder="your name">
-  <select id="mode">
-    <option value="online">play online</option>
-    <option value="easy">bot_easy</option>
-    <option value="medium">bot_medium</option>
-    <option value="hard">bot_hard</option>
-  </select>
-  <button id="start">start duel</button>
-  <div id="users"></div>
-</div>
-
-<div id="board-wrap">
-  <div id="board"></div>
-  <div id="status">idle</div>
-</div>
-
 <script>
 const boardEl = document.getElementById("board");
 const statusEl = document.getElementById("status");
@@ -151,6 +12,7 @@ let ws;
 let myId;
 let myMark;
 let duelId;
+let myTurn = false;
 let joinedOnline = false;
 
 const wins = [
@@ -165,13 +27,9 @@ function draw() {
     const c = document.createElement("div");
     c.className = "cell";
     c.textContent = v || "";
-    c.onclick = ()=> clickCell(i);
+    c.onclick = () => clickCell(i);
     boardEl.appendChild(c);
   });
-}
-
-function check(m) {
-  return wins.some(l=>l.every(i=>board[i]===m));
 }
 
 function startGame() {
@@ -185,50 +43,33 @@ function startGame() {
     connect(name);
     joinedOnline = true;
     startBtn.disabled = true;
-  } else {
-    board.fill(null);
-    gameOn = true;
-    draw();
-    statusEl.textContent = "vs bot";
   }
 }
 
 function clickCell(i) {
-  if (!gameOn || board[i]) return;
+  if (!gameOn) return;
+  if (!myTurn) return;
+  if (board[i]) return;
 
-  if (botLevel === "online") {
-    ws.send(JSON.stringify({
-      type:"move",
-      duelId,
-      index:i
-    }));
-  } else {
-    board[i] = "X";
-    draw();
-    if (check("X")) return end("you win");
-    botMove();
-  }
+  ws.send(JSON.stringify({
+    type: "move",
+    duelId,
+    index: i
+  }));
 }
 
-function botMove() {
-  const empty = board.map((v,i)=>v?null:i).filter(v=>v!==null);
-  if (!empty.length) return end("draw");
-  const m = empty[Math.floor(Math.random()*empty.length)];
-  board[m] = "O";
-  draw();
-  if (check("O")) end("bot wins");
-}
-
-function end(t) {
-  statusEl.textContent = t;
+function end(text) {
+  statusEl.textContent = text;
   gameOn = false;
+  myTurn = false;
 }
 
 function connect(name) {
-  ws = new WebSocket(`ws://${location.host}`);
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}`);
 
   ws.onopen = () => {
-    ws.send(JSON.stringify({ type:"setName", name }));
+    ws.send(JSON.stringify({ type: "setName", name }));
   };
 
   ws.onmessage = e => {
@@ -247,9 +88,9 @@ function connect(name) {
         if (u.id !== myId) {
           const d = document.createElement("div");
           d.textContent = u.name;
-          d.onclick = ()=> ws.send(JSON.stringify({
-            type:"challenge",
-            target:u.id
+          d.onclick = () => ws.send(JSON.stringify({
+            type: "challenge",
+            target: u.id
           }));
           usersEl.appendChild(d);
         }
@@ -259,26 +100,38 @@ function connect(name) {
     if (msg.type === "challengeRequest") {
       if (confirm(`${msg.name} wants to duel`)) {
         ws.send(JSON.stringify({
-          type:"challengeResponse",
-          from:msg.from,
-          accept:true
+          type: "challengeResponse",
+          from: msg.from,
+          accept: true
+        }));
+      } else {
+        ws.send(JSON.stringify({
+          type: "challengeResponse",
+          from: msg.from,
+          accept: false
         }));
       }
+    }
+
+    if (msg.type === "challengeDenied") {
+      statusEl.textContent = "challenge denied";
     }
 
     if (msg.type === "duelStart") {
       duelId = msg.duelId;
       myMark = msg.mark;
-      board.fill(null);
+      board = Array(9).fill(null);
       gameOn = true;
+      myTurn = msg.turn === myId;
       draw();
-      statusEl.textContent = `you are ${myMark}`;
+      statusEl.textContent = myTurn ? "your turn" : "enemy turn";
     }
 
     if (msg.type === "updateBoard") {
       board = msg.board;
+      myTurn = msg.turn === myId;
       draw();
-      statusEl.textContent = msg.turn === myId ? "your turn" : "enemy turn";
+      statusEl.textContent = myTurn ? "your turn" : "enemy turn";
     }
 
     if (msg.type === "gameOver") {
@@ -290,6 +143,3 @@ function connect(name) {
 startBtn.onclick = startGame;
 draw();
 </script>
-
-</body>
-</html>
