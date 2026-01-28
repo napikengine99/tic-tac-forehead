@@ -1,0 +1,44 @@
+body {
+  margin: 0;
+  background: #111;
+  color: white;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#menu {
+  margin: 20px;
+}
+
+#game {
+  position: relative;
+  width: 400px;
+  height: 400px;
+}
+
+#forehead {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#board {
+  position: absolute;
+  top: 20%;
+  left: 20%;
+  width: 60%;
+  height: 60%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.cell {
+  border: 2px solid rgba(255,255,255,0.6);
+  font-size: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
