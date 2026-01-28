@@ -7,24 +7,28 @@
 </head>
 <body>
 
+<!-- neat topbar -->
 <div id="topbar">
   <input id="nameInput" placeholder="set name">
   <button onclick="setName()">save</button>
 </div>
 
 <div id="layout">
+
   <div id="sidebar">
     <h2>online</h2>
     <div id="users"></div>
   </div>
 
   <div id="game">
-    <div id="turnText">waiting…</div>
+    <div id="turnText">waiting...</div>
     <img src="forehead.png" id="forehead">
     <div id="board"></div>
   </div>
+
 </div>
 
+<!-- duel popup -->
 <div id="popup" class="hidden">
   <p id="popupText"></p>
   <div class="popupButtons">
@@ -37,4 +41,3 @@
 <script src="game.js"></script>
 </body>
 </html>
-
