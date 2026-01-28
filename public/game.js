@@ -3,17 +3,17 @@ const socket = io()
 let board = Array(9).fill(null)
 let mySymbol = null
 let room = null
-let pendingDuel = null
+let myTurn = false
 
 const boardDiv = document.getElementById("board")
 const usersDiv = document.getElementById("users")
 const popup = document.getElementById("popup")
 const popupText = document.getElementById("popupText")
+const turnText = document.getElementById("turnText")
 
 function setName() {
   const name = document.getElementById("nameInput").value.trim()
-  if (!name) return
-  socket.emit("set-name", name)
+  if (name) socket.emit("set-name", name)
 }
 
 for (let i = 0; i < 9; i++) {
@@ -36,50 +36,59 @@ socket.on("users", users => {
 })
 
 socket.on("duel-request", data => {
-  pendingDuel = data.fromId
   popupText.textContent = `duel request from ${data.fromName}`
   popup.classList.remove("hidden")
+  popup.dataset.from = data.fromId
 })
 
 function acceptDuel() {
-  if (!pendingDuel) return
-  socket.emit("duel-accept", pendingDuel)
-  clearPopup()
-}
-
-function declineDuel() {
-  if (!pendingDuel) return
-  socket.emit("duel-decline", pendingDuel)
-  clearPopup()
-}
-
-socket.on("duel-declined", clearPopup)
-socket.on("duel-cancelled", clearPopup)
-
-socket.on("duel-start", data => {
-  room = data.room
-  board = Array(9).fill(null)
-  render()
-  socket.emit("join-room", room)
-})
-
-socket.on("symbol", s => mySymbol = s)
-
-socket.on("move", data => {
-  board[data.i] = data.symbol
-  render()
-})
-
-function clearPopup() {
-  pendingDuel = null
+  socket.emit("duel-accept", popup.dataset.from)
   popup.classList.add("hidden")
 }
 
-function makeMove(i) {
-  if (!room || board[i]) return
-  board[i] = mySymbol
-  socket.emit("move", { room, i, symbol: mySymbol })
+function declineDuel() {
+  popup.classList.add("hidden")
+}
+
+socket.on("duel-start", data => {
+  room = data.room
+  socket.emit("join-room", room)
+})
+
+socket.on("init", data => {
+  mySymbol = data.symbol
+  board = data.board
+  myTurn = data.turn === socket.id
+  updateTurnText()
   render()
+})
+
+socket.on("state", data => {
+  board = data.board
+  myTurn = data.turn === socket.id
+
+  if (data.winner) {
+    turnText.textContent =
+      data.winner === "draw"
+        ? "draw"
+        : `${data.winner} wins`
+  } else {
+    updateTurnText()
+  }
+
+  render()
+})
+
+function makeMove(i) {
+  if (!myTurn) return
+  if (board[i]) return
+  socket.emit("move", { room, index: i })
+}
+
+function updateTurnText() {
+  turnText.textContent = myTurn
+    ? "your turn"
+    : "their turn"
 }
 
 function render() {
