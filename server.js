@@ -5,28 +5,33 @@ const io = require("socket.io")(http)
 
 app.use(express.static("public"))
 
-let users = {}
-let games = {}
+const users = {}
+const games = {}
 
-function broadcastUsers() {
+function sendUsers() {
   io.emit("users", Object.values(users))
 }
 
 io.on("connection", socket => {
+  // register user immediately
   users[socket.id] = {
     id: socket.id,
-    name: "guest" + socket.id.slice(0, 4)
+    name: "guest" + socket.id.slice(0, 4),
+    inGame: false
   }
 
-  broadcastUsers()
+  sendUsers()
 
   socket.on("set-name", name => {
+    if (!users[socket.id]) return
     users[socket.id].name = name
-    broadcastUsers()
+    sendUsers()
   })
 
   socket.on("duel-request", targetId => {
     if (!users[targetId]) return
+    if (users[targetId].inGame) return
+
     io.to(targetId).emit("duel-request", {
       fromId: socket.id,
       fromName: users[socket.id].name
@@ -36,16 +41,20 @@ io.on("connection", socket => {
   socket.on("duel-accept", targetId => {
     if (!users[targetId]) return
 
-    const room = socket.id + "#" + targetId
+    const room = `${socket.id}_${targetId}`
 
     games[room] = {
       board: Array(9).fill(null),
-      turn: socket.id,
+      turn: "X",
       players: {
         X: socket.id,
         O: targetId
       }
     }
+
+    users[socket.id].inGame = true
+    users[targetId].inGame = true
+    sendUsers()
 
     socket.join(room)
     io.to(targetId).emit("duel-start", { room })
@@ -53,11 +62,12 @@ io.on("connection", socket => {
   })
 
   socket.on("join-room", room => {
-    socket.join(room)
     const game = games[room]
     if (!game) return
 
-    let symbol =
+    socket.join(room)
+
+    const symbol =
       game.players.X === socket.id ? "X" :
       game.players.O === socket.id ? "O" :
       null
@@ -72,17 +82,18 @@ io.on("connection", socket => {
   socket.on("move", ({ room, index }) => {
     const game = games[room]
     if (!game) return
-    if (game.turn !== socket.id) return
-    if (game.board[index]) return
 
     const symbol =
-      game.players.X === socket.id ? "X" : "O"
+      game.players.X === socket.id ? "X" :
+      game.players.O === socket.id ? "O" :
+      null
+
+    if (!symbol) return
+    if (game.turn !== symbol) return
+    if (game.board[index]) return
 
     game.board[index] = symbol
-    game.turn =
-      game.turn === game.players.X
-        ? game.players.O
-        : game.players.X
+    game.turn = symbol === "X" ? "O" : "X"
 
     const winner = checkWinner(game.board)
 
@@ -94,8 +105,12 @@ io.on("connection", socket => {
   })
 
   socket.on("disconnect", () => {
+    const user = users[socket.id]
+    if (!user) return
+
+    user.inGame = false
     delete users[socket.id]
-    broadcastUsers()
+    sendUsers()
   })
 })
 
@@ -112,7 +127,7 @@ function checkWinner(b) {
     }
   }
 
-  return b.every(x => x) ? "draw" : null
+  return b.every(v => v) ? "draw" : null
 }
 
 const port = process.env.PORT || 3000
