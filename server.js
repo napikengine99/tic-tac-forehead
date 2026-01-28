@@ -17,14 +17,44 @@ let duels = [];   // { id, x, o, board, turn }
 
 const genId = () => Math.random().toString(36).slice(2);
 
+function send(ws, data) {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(data));
+  }
+}
+
 function sendUserList() {
   const list = users.map(u => ({ id: u.id, name: u.name }));
-  users.forEach(u => u.ws.send(JSON.stringify({ type:"userList", list })));
+  users.forEach(u => send(u.ws, { type: "userList", list }));
 }
 
 function checkWin(board, m) {
-  const w=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  return w.some(l=>l.every(i=>board[i]===m));
+  const w = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+  return w.some(l => l.every(i => board[i] === m));
+}
+
+function checkDraw(board) {
+  return board.every(c => c !== null);
+}
+
+function endDuel(duel, winnerId = null) {
+  for (const u of users) {
+    if (u.id === duel.x || u.id === duel.o) {
+      if (!winnerId) {
+        send(u.ws, { type: "gameOver", result: "draw" });
+      } else {
+        send(u.ws, {
+          type: "gameOver",
+          result: u.id === winnerId ? "you win" : "you lose"
+        });
+      }
+    }
+  }
+  duels = duels.filter(d => d.id !== duel.id);
 }
 
 wss.on("connection", ws => {
@@ -39,38 +69,35 @@ wss.on("connection", ws => {
       if (me) return;
 
       if (users.some(u => u.name === msg.name)) {
-        ws.send(JSON.stringify({ type:"nameTaken" }));
+        send(ws, { type: "nameTaken" });
         return;
       }
 
       me = { id: genId(), name: msg.name, ws };
       users.push(me);
-      ws.send(JSON.stringify({ type:"assignId", userId: me.id }));
+      send(ws, { type: "assignId", userId: me.id });
       sendUserList();
     }
 
     /* CHALLENGE */
-    if (msg.type === "challenge") {
-      if (!me) return;
-      if (msg.target === me.id) return;
-
+    if (msg.type === "challenge" && me) {
       const target = users.find(u => u.id === msg.target);
       if (!target) return;
 
-      target.ws.send(JSON.stringify({
-        type:"challengeRequest",
+      send(target.ws, {
+        type: "challengeRequest",
         from: me.id,
         name: me.name
-      }));
+      });
     }
 
     /* RESPONSE */
-    if (msg.type === "challengeResponse") {
+    if (msg.type === "challengeResponse" && me) {
       const other = users.find(u => u.id === msg.from);
-      if (!other || !me) return;
+      if (!other) return;
 
       if (!msg.accept) {
-        other.ws.send(JSON.stringify({ type:"challengeDenied" }));
+        send(other.ws, { type: "challengeDenied" });
         return;
       }
 
@@ -84,28 +111,29 @@ wss.on("connection", ws => {
 
       duels.push(duel);
 
-      other.ws.send(JSON.stringify({
-        type:"duelStart",
+      send(other.ws, {
+        type: "duelStart",
         duelId: duel.id,
-        mark:"X",
+        mark: "X",
         turn: duel.turn,
         opponent: me.name
-      }));
+      });
 
-      me.ws.send(JSON.stringify({
-        type:"duelStart",
+      send(me.ws, {
+        type: "duelStart",
         duelId: duel.id,
-        mark:"O",
+        mark: "O",
         turn: duel.turn,
         opponent: other.name
-      }));
+      });
     }
 
     /* MOVE */
-    if (msg.type === "move") {
+    if (msg.type === "move" && me) {
       const d = duels.find(d => d.id === msg.duelId);
-      if (!d || d.turn !== me.id) return;
-      if (d.board[msg.index]) return;
+      if (!d) return;
+      if (d.turn !== me.id) return;
+      if (d.board[msg.index] !== null) return;
 
       const mark = d.x === me.id ? "X" : "O";
       d.board[msg.index] = mark;
@@ -113,30 +141,39 @@ wss.on("connection", ws => {
 
       for (const u of users) {
         if (u.id === d.x || u.id === d.o) {
-          u.ws.send(JSON.stringify({
-            type:"updateBoard",
-            board:d.board,
-            turn:d.turn
-          }));
+          send(u.ws, {
+            type: "updateBoard",
+            board: d.board,
+            turn: d.turn
+          });
         }
       }
 
       if (checkWin(d.board, mark)) {
-        for (const u of users) {
-          if (u.id === d.x || u.id === d.o) {
-            u.ws.send(JSON.stringify({
-              type:"gameOver",
-              result: u.id === me.id ? "you win" : "you lose"
-            }));
-          }
-        }
-        duels = duels.filter(x => x.id !== d.id);
+        endDuel(d, me.id);
+      } else if (checkDraw(d.board)) {
+        endDuel(d, null);
       }
     }
   });
 
   ws.on("close", () => {
     if (!me) return;
+
+    // kill any duel this user was in
+    const duel = duels.find(d => d.x === me.id || d.o === me.id);
+    if (duel) {
+      const otherId = duel.x === me.id ? duel.o : duel.x;
+      const other = users.find(u => u.id === otherId);
+      if (other) {
+        send(other.ws, {
+          type: "gameOver",
+          result: "enemy disconnected"
+        });
+      }
+      duels = duels.filter(d => d !== duel);
+    }
+
     users = users.filter(u => u !== me);
     sendUserList();
   });
