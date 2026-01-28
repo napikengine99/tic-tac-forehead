@@ -8,6 +8,17 @@ let pendingDuel = null
 const boardDiv = document.getElementById("board")
 const usersDiv = document.getElementById("users")
 const popup = document.getElementById("popup")
+const popupText = document.getElementById("popupText")
+const layout = document.getElementById("layout")
+const namePrompt = document.getElementById("namePrompt")
+
+function setName() {
+  const name = document.getElementById("nameInput").value.trim()
+  if (!name) return
+  socket.emit("set-name", name)
+  namePrompt.classList.add("hidden")
+  layout.classList.remove("hidden")
+}
 
 for (let i = 0; i < 9; i++) {
   const c = document.createElement("div")
@@ -18,30 +29,39 @@ for (let i = 0; i < 9; i++) {
 
 socket.on("users", users => {
   usersDiv.innerHTML = ""
-  users.forEach(id => {
-    if (id === socket.id) return
-    const u = document.createElement("div")
-    u.className = "user"
-    u.textContent = "user " + id.slice(0, 4)
-    u.onclick = () => socket.emit("duel-request", id)
-    usersDiv.appendChild(u)
+  users.forEach(u => {
+    if (u.id === socket.id) return
+    const el = document.createElement("div")
+    el.className = "user"
+    el.textContent = u.name
+    el.onclick = () => socket.emit("duel-request", u.id)
+    usersDiv.appendChild(el)
   })
 })
 
-socket.on("duel-request", from => {
-  pendingDuel = from
+socket.on("duel-request", data => {
+  pendingDuel = data.fromId
+  popupText.textContent = `duel request from ${data.fromName}`
   popup.classList.remove("hidden")
 })
 
 function acceptDuel() {
   socket.emit("duel-accept", pendingDuel)
-  popup.classList.add("hidden")
+  clearPopup()
 }
 
 function declineDuel() {
-  pendingDuel = null
-  popup.classList.add("hidden")
+  socket.emit("duel-decline", pendingDuel)
+  clearPopup()
 }
+
+socket.on("duel-declined", () => {
+  clearPopup()
+})
+
+socket.on("duel-cancelled", () => {
+  clearPopup()
+})
 
 socket.on("duel-start", data => {
   room = data.room
@@ -56,6 +76,11 @@ socket.on("move", data => {
   board[data.i] = data.symbol
   render()
 })
+
+function clearPopup() {
+  pendingDuel = null
+  popup.classList.add("hidden")
+}
 
 function makeMove(i) {
   if (!room) return
