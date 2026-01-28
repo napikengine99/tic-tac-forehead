@@ -1,44 +1,99 @@
-body {
-  margin: 0;
-  background: #111;
-  color: white;
-  font-family: sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+* {
+  box-sizing: border-box;
 }
 
-#menu {
-  margin: 20px;
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #222, #000);
+  color: white;
+  font-family: system-ui;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#layout {
+  display: flex;
+  height: 100%;
+}
+
+#sidebar {
+  width: 260px;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+  padding: 20px;
+}
+
+#sidebar h2 {
+  margin-top: 0;
+  opacity: 0.8;
+}
+
+.user {
+  padding: 10px;
+  margin-bottom: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.user:hover {
+  background: rgba(255,255,255,0.18);
 }
 
 #game {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
-  width: 400px;
-  height: 400px;
 }
 
 #forehead {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 420px;
+  filter: drop-shadow(0 0 40px rgba(255,255,255,0.15));
 }
 
 #board {
   position: absolute;
-  top: 20%;
-  left: 20%;
-  width: 60%;
-  height: 60%;
+  width: 240px;
+  height: 240px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
 }
 
 .cell {
-  border: 2px solid rgba(255,255,255,0.6);
+  border: 2px solid rgba(255,255,255,0.5);
   font-size: 3rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cell:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+#popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#popup button {
+  margin: 10px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.hidden {
+  display: none;
 }
