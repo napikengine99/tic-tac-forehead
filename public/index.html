@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>tic tac forehead</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="menu">
+  <select id="mode">
+    <option value="easy">easy bot</option>
+    <option value="medium">medium bot</option>
+    <option value="hard">hard bot</option>
+    <option value="multi">multiplayer</option>
+  </select>
+  <input id="room" placeholder="room id (multiplayer)">
+  <button onclick="startGame()">start</button>
+</div>
+
+<div id="game">
+  <img src="forehead.png" id="forehead">
+  <div id="board"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
