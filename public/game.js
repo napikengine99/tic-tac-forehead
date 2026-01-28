@@ -21,6 +21,7 @@ for (let i = 0; i < 9; i++) {
   boardDiv.appendChild(cell)
 }
 
+// name setter
 function setName() {
   const val = document.getElementById("nameInput").value.trim()
   if (val) socket.emit("set-name", val)
@@ -30,7 +31,7 @@ function setName() {
 socket.on("users", users => {
   usersDiv.innerHTML = ""
   users.forEach(u => {
-    if (u.id === socket.id) return
+    if (u.id === socket.id) return // optional: skip self
     const el = document.createElement("div")
     el.className = "user"
     el.textContent = u.name + (u.inGame ? " (busy)" : "")
@@ -51,13 +52,18 @@ socket.on("duel-request", data => {
 function acceptDuel() {
   if (!pendingFrom) return
   socket.emit("duel-accept", pendingFrom)
-  popup.classList.add("hidden")
-  pendingFrom = null
+  clearPopup()
 }
 
 function declineDuel() {
-  popup.classList.add("hidden")
+  if (!pendingFrom) return
+  socket.emit("duel-decline", pendingFrom)
+  clearPopup()
+}
+
+function clearPopup() {
   pendingFrom = null
+  popup.classList.add("hidden")
 }
 
 // duel start
@@ -66,7 +72,7 @@ socket.on("duel-start", data => {
   socket.emit("join-room", room)
 })
 
-// init game
+// initialize game state
 socket.on("init", data => {
   mySymbol = data.symbol
   board = data.board
@@ -75,7 +81,7 @@ socket.on("init", data => {
   render()
 })
 
-// state update
+// update state from server
 socket.on("state", data => {
   board = data.board
   currentTurn = data.turn
@@ -94,21 +100,29 @@ socket.on("state", data => {
   render()
 })
 
+socket.on("duel-declined", clearPopup)
+socket.on("duel-cancelled", clearPopup)
+
+// handle cell click
 function clickCell(i) {
   if (!room) return
   if (board[i]) return
   if (currentTurn !== mySymbol) return
-
   socket.emit("move", { room, index: i })
 }
 
+// update turn display
 function updateTurn() {
   turnText.textContent =
     currentTurn === mySymbol ? "your turn" : "their turn"
 }
 
+// render board
 function render() {
   [...boardDiv.children].forEach((c, i) => {
     c.textContent = board[i] || ""
   })
 }
+
+// hide popup initially
+popup.classList.add("hidden")
