@@ -7,13 +7,12 @@
 </head>
 <body>
 
-<div id="namePrompt">
-  <input id="nameInput" placeholder="enter your name">
-  <button onclick="setName()">join</button>
+<div id="topbar">
+  <input id="nameInput" placeholder="set name">
+  <button onclick="setName()">save</button>
 </div>
 
-<div id="layout" class="hidden">
-
+<div id="layout">
   <div id="sidebar">
     <h2>online</h2>
     <div id="users"></div>
@@ -23,13 +22,14 @@
     <img src="forehead.png" id="forehead">
     <div id="board"></div>
   </div>
-
 </div>
 
 <div id="popup" class="hidden">
   <p id="popupText"></p>
-  <button onclick="acceptDuel()">accept</button>
-  <button onclick="declineDuel()">decline</button>
+  <div class="popupButtons">
+    <button onclick="acceptDuel()">accept</button>
+    <button onclick="declineDuel()">decline</button>
+  </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
