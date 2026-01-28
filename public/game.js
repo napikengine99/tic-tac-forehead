@@ -9,15 +9,11 @@ const boardDiv = document.getElementById("board")
 const usersDiv = document.getElementById("users")
 const popup = document.getElementById("popup")
 const popupText = document.getElementById("popupText")
-const layout = document.getElementById("layout")
-const namePrompt = document.getElementById("namePrompt")
 
 function setName() {
   const name = document.getElementById("nameInput").value.trim()
   if (!name) return
   socket.emit("set-name", name)
-  namePrompt.classList.add("hidden")
-  layout.classList.remove("hidden")
 }
 
 for (let i = 0; i < 9; i++) {
@@ -46,22 +42,19 @@ socket.on("duel-request", data => {
 })
 
 function acceptDuel() {
+  if (!pendingDuel) return
   socket.emit("duel-accept", pendingDuel)
   clearPopup()
 }
 
 function declineDuel() {
+  if (!pendingDuel) return
   socket.emit("duel-decline", pendingDuel)
   clearPopup()
 }
 
-socket.on("duel-declined", () => {
-  clearPopup()
-})
-
-socket.on("duel-cancelled", () => {
-  clearPopup()
-})
+socket.on("duel-declined", clearPopup)
+socket.on("duel-cancelled", clearPopup)
 
 socket.on("duel-start", data => {
   room = data.room
@@ -83,9 +76,7 @@ function clearPopup() {
 }
 
 function makeMove(i) {
-  if (!room) return
-  if (board[i]) return
-
+  if (!room || board[i]) return
   board[i] = mySymbol
   socket.emit("move", { room, i, symbol: mySymbol })
   render()
