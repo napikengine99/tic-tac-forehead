@@ -1,26 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8">
-  <title>tic tac forehead</title>
+  <title>forehead duels</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div id="menu">
-  <select id="mode">
-    <option value="easy">easy bot</option>
-    <option value="medium">medium bot</option>
-    <option value="hard">hard bot</option>
-    <option value="multi">multiplayer</option>
-  </select>
-  <input id="room" placeholder="room id (multiplayer)">
-  <button onclick="startGame()">start</button>
+<div id="layout">
+
+  <div id="sidebar">
+    <h2>online</h2>
+    <div id="users"></div>
+  </div>
+
+  <div id="game">
+    <img src="forehead.png" id="forehead">
+    <div id="board"></div>
+  </div>
+
 </div>
 
-<div id="game">
-  <img src="forehead.png" id="forehead">
-  <div id="board"></div>
+<div id="popup" class="hidden">
+  <p>duel request</p>
+  <button onclick="acceptDuel()">accept</button>
+  <button onclick="declineDuel()">decline</button>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
