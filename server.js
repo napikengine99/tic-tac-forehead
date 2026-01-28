@@ -7,11 +7,23 @@ app.use(express.static("public"))
 
 let users = {}
 
+function broadcastUsers() {
+  io.emit("users", Object.values(users))
+}
+
 io.on("connection", socket => {
+  // create user immediately
+  users[socket.id] = {
+    id: socket.id,
+    name: "guest" + socket.id.slice(0, 4)
+  }
+
+  broadcastUsers()
 
   socket.on("set-name", name => {
-    users[socket.id] = { id: socket.id, name }
-    io.emit("users", Object.values(users))
+    if (!users[socket.id]) return
+    users[socket.id].name = name
+    broadcastUsers()
   })
 
   socket.on("duel-request", targetId => {
@@ -24,7 +36,6 @@ io.on("connection", socket => {
 
   socket.on("duel-accept", targetId => {
     if (!users[targetId]) return
-
     const room = socket.id + "#" + targetId
     socket.join(room)
     io.to(targetId).emit("duel-start", { room })
@@ -38,8 +49,7 @@ io.on("connection", socket => {
   socket.on("join-room", room => {
     socket.join(room)
     const size = io.sockets.adapter.rooms.get(room)?.size || 0
-    const symbol = size === 1 ? "X" : "O"
-    socket.emit("symbol", symbol)
+    socket.emit("symbol", size === 1 ? "X" : "O")
   })
 
   socket.on("move", data => {
@@ -48,7 +58,7 @@ io.on("connection", socket => {
 
   socket.on("disconnect", () => {
     delete users[socket.id]
-    io.emit("users", Object.values(users))
+    broadcastUsers()
     io.emit("duel-cancelled", socket.id)
   })
 })
